@@ -12,40 +12,41 @@ async function generateMailAccountPda(programId: anchor.web3.PublicKey, owner: a
   return await anchor.web3.PublicKey.findProgramAddress(seeds, programId);
 }
 
+const WELCOME_MESSAGE = "Welcome to SolMail";
+
 describe("solana-mail-anchor", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace.SolanaMailAnchor as Program<SolanaMailAnchor>;
   const programProvider = program.provider as anchor.AnchorProvider;
   
-  const wallet1 = programProvider.wallet;
-  const sender1 = programProvider.wallet.publicKey;
+  // const wallet1 = programProvider.wallet;
+  // const sender1 = programProvider.wallet.publicKey;
 
-  const sender2Keypair = anchor.web3.Keypair.generate();
-  const sender2 = sender2Keypair.publicKey;
-  const wallet2 = new anchor.Wallet(sender2Keypair);
-  const provider2 = new anchor.AnchorProvider(program.provider.connection, wallet2, {});
+  // const sender2Keypair = anchor.web3.Keypair.generate();
+  // const sender2 = sender2Keypair.publicKey;
+  // const wallet2 = new anchor.Wallet(sender2Keypair);
+  // const provider2 = new anchor.AnchorProvider(program.provider.connection, wallet2, {});
 
-  let mailAccount1 = null;
-  let mailAccount1BumpSeed = null;
+  let mailAccount1 = anchor.web3.Keypair.generate();
+  // let mailAccount1BumpSeed = null;
 
   let mailAccount2 = null;
-  let mailAccount2BumpSeed = null;
+  // let mailAccount2BumpSeed = null;
 
   it("Mail Account1 initialized!", async () => {
-    [mailAccount1, mailAccount1BumpSeed] = await generateMailAccountPda(program.programId, sender1);
-
+    // [mailAccount1, mailAccount1BumpSeed] = await generateMailAccountPda(program.programId, sender1);
     await program.methods.initializeAccount()
       .accounts({
-        owner: sender1,
-        mailAccount: mailAccount1
+        owner: programProvider.wallet.publicKey,
+        mailAccount: mailAccount1.publicKey
       })
-      .signers([])
+      .signers([mailAccount1])
       .rpc();
-    let mailAccount1Data = await program.account.mailAccount.fetch(mailAccount1);
-    expect(mailAccount1Data.bumpSeed).to.equal(mailAccount1BumpSeed);
-    console.log(mailAccount1Data);
-  });
+
+      let data = await program.account.mailAccount.fetch(mailAccount1.publicKey);
+      expect(data.sent[0].subject).to.equal(WELCOME_MESSAGE);
+    });
 
   it("Mail Account2 initialized", async ()=>{
     // let ix = anchor.web3.SystemProgram.createAccount({

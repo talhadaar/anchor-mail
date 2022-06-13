@@ -20,7 +20,7 @@ pub mod solana_mail_anchor {
             sent_date: String::from("9/29/2021, 3:58:02 PM"),
           };
         ctx.accounts.mail_account.sent.push(welcome_mail);
-        ctx.accounts.mail_account.bump_seed = *ctx.bumps.get("mail_account").unwrap();
+        // ctx.accounts.mail_account.bump_seed = *ctx.bumps.get("mail_account").unwrap();
         Ok(())
     }
 
@@ -37,7 +37,7 @@ pub struct InitAccount<'info> {
     #[account(mut)]
     owner: Signer<'info>,
     // Occupy all 10MB of account storage space
-#[account(init,payer = owner, space = 10240, seeds = [owner.key.as_ref(), MAIL_ACCOUNT_DISCRIMINATOR.as_bytes()], bump)]
+    #[account(init,payer = owner, space = 10240)]
     pub mail_account: Account<'info, MailAccount>,
     pub system_program: Program<'info, System>,
 }
