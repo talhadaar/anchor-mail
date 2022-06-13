@@ -24,7 +24,9 @@ pub mod solana_mail_anchor {
         Ok(())
     }
 
-    pub fn send_email(ctx: Context<SendEmail>) -> Result<()> {
+    pub fn send_email(ctx: Context<SendEmail>, mail: Mail) -> Result<()> {
+        ctx.accounts.sender.sent.push(mail.clone());
+        ctx.accounts.receiver.inbox.push(mail);
         Ok(())
     }
 }
@@ -43,4 +45,9 @@ pub struct InitAccount<'info> {
 }
 
 #[derive(Accounts)]
-pub struct SendEmail {}
+pub struct SendEmail<'info> {
+    #[account(mut)]
+    sender: Account<'info, MailAccount>,
+    #[account(mut)]
+    receiver: Account<'info, MailAccount>,
+}

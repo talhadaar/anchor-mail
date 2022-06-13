@@ -19,22 +19,14 @@ describe("solana-mail-anchor", () => {
 
   const program = anchor.workspace.SolanaMailAnchor as Program<SolanaMailAnchor>;
   const programProvider = program.provider as anchor.AnchorProvider;
-  
-  // const wallet1 = programProvider.wallet;
-  // const sender1 = programProvider.wallet.publicKey;
-
-  // const sender2Keypair = anchor.web3.Keypair.generate();
-  // const sender2 = sender2Keypair.publicKey;
-  // const wallet2 = new anchor.Wallet(sender2Keypair);
-  // const provider2 = new anchor.AnchorProvider(program.provider.connection, wallet2, {});
 
   let mailAccount1 = anchor.web3.Keypair.generate();
   // let mailAccount1BumpSeed = null;
 
-  let mailAccount2 = null;
+  let mailAccount2 = anchor.web3.Keypair.generate();
   // let mailAccount2BumpSeed = null;
 
-  it("Mail Account1 initialized!", async () => {
+  it("Mail Account 1 & 2 initialized!", async () => {
     // [mailAccount1, mailAccount1BumpSeed] = await generateMailAccountPda(program.programId, sender1);
     await program.methods.initializeAccount()
       .accounts({
@@ -43,35 +35,44 @@ describe("solana-mail-anchor", () => {
       })
       .signers([mailAccount1])
       .rpc();
+    await program.methods.initializeAccount()
+      .accounts({
+        owner: programProvider.wallet.publicKey,
+        mailAccount: mailAccount2.publicKey
+      })
+      .signers([mailAccount2])
+      .rpc();
 
-      let data = await program.account.mailAccount.fetch(mailAccount1.publicKey);
-      expect(data.sent[0].subject).to.equal(WELCOME_MESSAGE);
-    });
+    let data = await program.account.mailAccount.fetch(mailAccount1.publicKey);
+    expect(data.sent[0].subject).to.equal(WELCOME_MESSAGE);
+    data = await program.account.mailAccount.fetch(mailAccount2.publicKey);
+    console.log(data);
+    expect(data.sent[0].subject).to.equal(WELCOME_MESSAGE);
+    console.log(data);
+  });
 
-  it("Mail Account2 initialized", async ()=>{
-    // let ix = anchor.web3.SystemProgram.createAccount({
-    //   fromPubkey: ,
-    //   newAccountPubkey: sender2,
-    //   programId: program.programId,
-    //   space: 1,
-    //   lamports: anchor.web3.LAMPORTS_PER_SOL * 100
-    // });
-    // let tx = new anchor.web3.Transaction().add(ix);
-    // let txSig = await program.provider.sendAndConfirm(tx, [sender2Keypair]);
-    // console.log("Sender2 account created ", txSig);
+  it("Account 1 mails account 2", async () => {
+    let mail = {
+      id: 'l1s19bscs0060',
+      fromAddress: mailAccount1.publicKey.toBase58(),
+      toAddress: mailAccount2.publicKey.toBase58(),
+      subject: 'Hello there.',
+      body: 'GENERAL KENOBO???\n' +
+        '            Lorem, ipsum dolor sit amet consectetur adipisicing elit. Quos ut labore, debitis assumenda, dolorem nulla facere soluta exercitationem excepturi provident ipsam reprehenderit repellat quisquam corrupti commodi fugiat iusto quae voluptates!',
+      sentDate: '13/6/2022, 3:58:02 PM'
+    };
+    await program.methods.sendEmail(mail).accounts({
+      sender: mailAccount1.publicKey,
+      receiver: mailAccount2.publicKey
+    })
+    .signers([])
+    .rpc();
 
-  //   await program.provider.connection.requestAirdrop(wallet2.publicKey, anchor.web3.LAMPORTS_PER_SOL * 1000);
-  //   [mailAccount2, mailAccount2BumpSeed] = await generateMailAccountPda(program.programId, wall);
-  //   await program.methods.initializeAccount()
-  //     .accounts({
-  //       owner: wallet2.publicKey,
-  //       mailAccount: mailAccount2
-  //     })
-  //     .signers([sender2Keypair])
-  //     .rpc();
-
-  //   let mailAccount2Data = await program.account.mailAccount.fetch(mailAccount2);
-  //   expect(mailAccount2Data.bumpSeed).to.equal(mailAccount2BumpSeed);
-  //   console.log(mailAccount2Data);
+    let data = await program.account.mailAccount.fetch(mailAccount1.publicKey);
+    expect(data.sent[1].subject).to.equal(mail.subject);
+    data = await program.account.mailAccount.fetch(mailAccount2.publicKey);
+    console.log(data);
+    expect(data.inbox[0].subject).to.equal(mail.subject);
+    console.log(data);
   });
 });
